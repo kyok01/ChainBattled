@@ -28,6 +28,7 @@ contract ChainBattles is ERC721URIStorage {
         view
         returns (string memory)
     {
+        (string memory level, string memory speed, string memory strength, string memory life) = getProps(tokenId);
         bytes memory svg = abi.encodePacked(
             '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350">',
             "<style>.base { fill: white; font-family: serif; font-size: 14px; }</style>",
@@ -37,7 +38,13 @@ contract ChainBattles is ERC721URIStorage {
             "</text>",
             '<text x="50%" y="50%" class="base" dominant-baseline="middle" text-anchor="middle">',
             "Levels: ",
-            getLevels(tokenId),
+            level,
+            ",Speed: ",
+            speed,
+            ",Strength: ",
+            strength,
+            ",Life: ",
+            life,
             "</text>",
             "</svg>"
         );
@@ -50,17 +57,17 @@ contract ChainBattles is ERC721URIStorage {
             );
     }
 
-    function getLevels(uint256 tokenId) public view returns (string memory) {
-        uint256 levels = tokenIdToProps[tokenId].level;
-        return levels.toString();
+    function getProps(uint256 tokenId) public view returns (string memory,string memory, string memory, string memory) {
+        Props memory props = tokenIdToProps[tokenId];
+        return (props.level.toString(), props.speed.toString(), props.strength.toString(), props.life.toString());
     }
 
     /**
      * @dev create random number for nft props
      */
 
-    function createRandom(uint number) public view returns(uint){
-        return uint(blockhash(block.number-1)) % number;
+    function createRandom(uint range, uint number) public view returns(uint){
+        return uint(blockhash(block.number-number)) % range;
     }
 
     function getTokenURI(uint256 tokenId) public view returns (string memory) {
@@ -85,9 +92,9 @@ contract ChainBattles is ERC721URIStorage {
     }
 
     function mint() public {
-        uint256 randamSpeed = createRandom(100);
-        uint256 randamStrength = createRandom(100);
-        uint256 randamLife = createRandom(100);
+        uint256 randamSpeed = createRandom(100,1);
+        uint256 randamStrength = createRandom(100,2);
+        uint256 randamLife = createRandom(100,3);
 
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
@@ -101,8 +108,11 @@ contract ChainBattles is ERC721URIStorage {
         require(_exists(tokenId), "not exist");
         require(ownerOf(tokenId) == msg.sender, "you are not an owner");
 
-        uint256 currentLevel = tokenIdToProps[tokenId].level;
-        tokenIdToProps[tokenId].level = currentLevel + 1;
+        Props memory newProps;
+        Props memory currentProps = tokenIdToProps[tokenId];
+        
+        newProps = Props(currentProps.level+1, currentProps.speed+1, currentProps.strength+1, currentProps.life+1);
+        tokenIdToProps[tokenId] = newProps;
         _setTokenURI(tokenId, getTokenURI(tokenId));
     }
 }
