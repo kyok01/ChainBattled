@@ -12,11 +12,22 @@ contract ChainBattles is ERC721URIStorage {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
-    mapping(uint256 => uint256) public tokenIdToLevels;
+    struct Props {
+        uint256 level;
+        uint256 speed;
+        uint256 strength;
+        uint256 life;
+    }
+
+    mapping(uint256 => Props) public tokenIdToProps;
 
     constructor() ERC721("Chain Battles", "CBTLS") {}
 
-    function generateCharacter(uint256 tokenId) public view returns (string memory) {
+    function generateCharacter(uint256 tokenId)
+        public
+        view
+        returns (string memory)
+    {
         bytes memory svg = abi.encodePacked(
             '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350">',
             "<style>.base { fill: white; font-family: serif; font-size: 14px; }</style>",
@@ -40,8 +51,16 @@ contract ChainBattles is ERC721URIStorage {
     }
 
     function getLevels(uint256 tokenId) public view returns (string memory) {
-        uint256 levels = tokenIdToLevels[tokenId];
+        uint256 levels = tokenIdToProps[tokenId].level;
         return levels.toString();
+    }
+
+    /**
+     * @dev create random number for nft props
+     */
+
+    function createRandom(uint number) public view returns(uint){
+        return uint(blockhash(block.number-1)) % number;
     }
 
     function getTokenURI(uint256 tokenId) public view returns (string memory) {
@@ -66,18 +85,24 @@ contract ChainBattles is ERC721URIStorage {
     }
 
     function mint() public {
+        uint256 randamSpeed = createRandom(100);
+        uint256 randamStrength = createRandom(100);
+        uint256 randamLife = createRandom(100);
+
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
+
         _safeMint(msg.sender, newItemId);
-        tokenIdToLevels[newItemId] = 0;
+        tokenIdToProps[newItemId] = Props(0, randamSpeed, randamStrength, randamLife);
         _setTokenURI(newItemId, getTokenURI(newItemId));
     }
 
     function train(uint256 tokenId) public {
         require(_exists(tokenId), "not exist");
         require(ownerOf(tokenId) == msg.sender, "you are not an owner");
-        uint256 currentLevel = tokenIdToLevels[tokenId];
-        tokenIdToLevels[tokenId] = currentLevel + 1;
+
+        uint256 currentLevel = tokenIdToProps[tokenId].level;
+        tokenIdToProps[tokenId].level = currentLevel + 1;
         _setTokenURI(tokenId, getTokenURI(tokenId));
     }
 }
